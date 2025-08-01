@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "755269897635",
+    "project_id": "pocket-split-cc60a",
+    "storage_bucket": "pocket-split-cc60a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755269897635:android:1082e14d9feed86da61e16",
+        "android_client_info": {
+          "package_name": "com.example.pocket_split"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5zgrKyaRx_ToDF6QkPzvLVwX4hZwXnDk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

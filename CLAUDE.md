@@ -1168,3 +1168,5 @@ Splitwise maintains technical leadership in expense sharing with sophisticated d
 - Features are developed incrementally with immediate testing
 - Architecture follows clean code principles with BLoC pattern
 - Firebase backend integration throughout all features
+- This project is only for ios and android platforms
+- Ensure all features are responsive and optimized for both platforms
