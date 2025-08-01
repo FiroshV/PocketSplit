@@ -203,6 +203,8 @@ dependencies:
   permission_handler: ^11.0.1
 ```
 
+**Tip**: Use flutterfire to set up Firebase services.
+
 ## Core Features Overview
 
 ### Free Features
