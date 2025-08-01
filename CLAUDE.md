@@ -1073,3 +1073,98 @@ Success metrics for Splitwise's strategic pivot will depend on **payment process
 ## Conclusion
 
 Splitwise maintains technical leadership in expense sharing with sophisticated debt algorithms and expanding payment capabilities, but faces existential challenges from monetization strategy backlash and competitive pressure. The comprehensive feature analysis reveals a mature platform with strong integration potential, yet critical gaps in user experience and pricing strategy that competitors are successfully exploiting. The company's strategic pivot toward payment processing may provide new revenue streams, but success depends on balancing subscription revenue with user retention in an increasingly competitive landscape dominated by free alternatives.
+
+------------------
+
+# PocketSplit Development Todo List
+
+## Phase 1: Firebase Authentication & Welcome Pages
+
+### 🔄 Feature 1.1: Firebase Configuration & Authentication Setup
+**Status**: In Progress
+**Priority**: High
+**Description**: Set up Firebase project, add dependencies, configure Google Sign-In service
+**Tasks**:
+- [ ] Add Firebase dependencies to pubspec.yaml
+- [ ] Configure Firebase project and add configuration files
+- [ ] Set up Google Sign-In authentication
+- [ ] Create authentication service structure
+- [ ] Test Firebase connection
+
+### ⏳ Feature 1.2: Welcome Screen
+**Status**: Pending
+**Priority**: High  
+**Description**: Create welcome/onboarding screen with PocketSplit branding
+**Tasks**:
+- [ ] Design welcome screen layout
+- [ ] Add feature highlight carousel
+- [ ] Implement PocketSplit brand colors and theme
+- [ ] Add navigation to authentication screens
+- [ ] Test welcome screen UI and navigation
+
+### ⏳ Feature 1.3: Google Sign-In Registration/Login
+**Status**: Pending
+**Priority**: High
+**Description**: Implement complete Google authentication flow
+**Tasks**:
+- [ ] Create registration screen with Google Sign-In
+- [ ] Create login screen with Google Sign-In
+- [ ] Handle authentication states and errors
+- [ ] Implement user profile creation flow
+- [ ] Test complete authentication flow
+
+### ⏳ Feature 1.4: Authentication State Management
+**Status**: Pending
+**Priority**: High
+**Description**: Implement BLoC pattern for authentication state handling
+**Tasks**:
+- [ ] Create authentication BLoC
+- [ ] Implement auth wrapper for state management
+- [ ] Add automatic login persistence
+- [ ] Implement logout functionality
+- [ ] Test authentication state management
+
+### ⏳ Feature 1.5: Basic User Profile Setup
+**Status**: Pending
+**Priority**: High
+**Description**: Create user profile setup and Firestore integration
+**Tasks**:
+- [ ] Create user profile screen
+- [ ] Implement user data storage in Firestore
+- [ ] Add basic navigation structure
+- [ ] Handle user preferences
+- [ ] Test profile creation and data persistence
+
+## Future Phases (Planned)
+
+### Phase 2: Core App Structure
+- Home Dashboard
+- Basic Navigation Structure
+- User Profile Management
+
+### Phase 3: Group Management
+- Create/Join Groups
+- Group Member Management
+- Basic Group Settings
+
+### Phase 4: Expense Management
+- Add/Edit/Delete Expenses
+- Basic Split Calculations
+- Expense Categories
+
+### Phase 5: Advanced Features
+- Receipt Scanning (Premium)
+- Analytics Dashboard
+- Settlement System
+
+## Completion Legend
+- 🔄 In Progress
+- ⏳ Pending
+- ✅ Completed
+- ❌ Blocked/Issues
+
+## Notes
+- Each feature includes a testing break for user validation
+- Features are developed incrementally with immediate testing
+- Architecture follows clean code principles with BLoC pattern
+- Firebase backend integration throughout all features
