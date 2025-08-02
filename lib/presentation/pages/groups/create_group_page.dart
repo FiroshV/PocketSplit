@@ -32,6 +32,47 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     super.dispose();
   }
 
+  Widget _buildCustomSwitch({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Container(
+        width: 51,
+        height: 31,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15.5),
+          border: Border.all(color: AppTheme.neutralGray, width: 1),
+          color: value 
+              ? AppTheme.primary2.withValues(alpha: 0.3)
+              : AppTheme.neutralGray.withValues(alpha: 0.3),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 27,
+            height: 27,
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: value ? AppTheme.primary2 : Colors.white,
+              border: Border.all(color: AppTheme.neutralGray, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  offset: const Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImage() async {
     showModalBottomSheet(
       context: context,
@@ -303,16 +344,36 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
           ),
         ),
         const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text('Settle Up Reminders'),
-          subtitle: const Text('Get notifications to remind group members'),
-          value: _enableSettleUpReminders,
-          onChanged: (bool value) {
-            setState(() {
-              _enableSettleUpReminders = value;
-            });
-          },
-          activeColor: AppTheme.primary2,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Settle Up Reminders',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Get notifications to remind group members',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              _buildCustomSwitch(
+                value: _enableSettleUpReminders,
+                onChanged: (bool value) {
+                  setState(() {
+                    _enableSettleUpReminders = value;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -345,16 +406,36 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
           ),
         ),
         const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text('Balance Alert'),
-          subtitle: Text('Alert when balance reaches \$${_balanceAlertAmount.toStringAsFixed(0)}'),
-          value: _enableBalanceAlert,
-          onChanged: (bool value) {
-            setState(() {
-              _enableBalanceAlert = value;
-            });
-          },
-          activeColor: AppTheme.primary2,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Balance Alert',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Alert when balance reaches \$${_balanceAlertAmount.toStringAsFixed(0)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              _buildCustomSwitch(
+                value: _enableBalanceAlert,
+                onChanged: (bool value) {
+                  setState(() {
+                    _enableBalanceAlert = value;
+                  });
+                },
+              ),
+            ],
+          ),
         ),
         if (_enableBalanceAlert) ...[
           const SizedBox(height: 16),
