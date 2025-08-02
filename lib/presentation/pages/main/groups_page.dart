@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/presentation/pages/groups/create_group_page.dart';
 
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
@@ -18,10 +19,10 @@ class GroupsPage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () {
-                        // TODO: Navigate to Add Group screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Add Group feature coming soon!'),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CreateGroupPage(),
                           ),
                         );
                       },
@@ -101,9 +102,11 @@ class GroupsPage extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              // TODO: Navigate to Add Group screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add Group feature coming soon!')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CreateGroupPage(),
+                ),
               );
             },
 
