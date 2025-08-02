@@ -12,7 +12,12 @@
           "package_name": "com.example.pocket_split"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "755269897635-jrj6gt2vkdi4j15pb36lhvmh4s5o1b6p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB5zgrKyaRx_ToDF6QkPzvLVwX4hZwXnDk"
@@ -20,7 +25,63 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "755269897635-jrj6gt2vkdi4j15pb36lhvmh4s5o1b6p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "755269897635-j33puhu1elkr75ipodon5acq1o4bgrr4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pocketSplit"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:755269897635:android:42302a7232c81df8a61e16",
+        "android_client_info": {
+          "package_name": "com.pocket_split"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "755269897635-78fp1ttl1ghb2hiqcg5cqt6hq5h1vhtp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pocket_split",
+            "certificate_hash": "0f6254074dd0210e4dd4a791e63fa4fdfde4e92c"
+          }
+        },
+        {
+          "client_id": "755269897635-jrj6gt2vkdi4j15pb36lhvmh4s5o1b6p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5zgrKyaRx_ToDF6QkPzvLVwX4hZwXnDk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "755269897635-jrj6gt2vkdi4j15pb36lhvmh4s5o1b6p.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "755269897635-j33puhu1elkr75ipodon5acq1o4bgrr4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.pocketSplit"
+              }
+            }
+          ]
         }
       }
     }

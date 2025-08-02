@@ -63,6 +63,9 @@ class DefaultFirebaseOptions {
     messagingSenderId: '755269897635',
     projectId: 'pocket-split-cc60a',
     storageBucket: 'pocket-split-cc60a.firebasestorage.app',
+    androidClientId: '755269897635-78fp1ttl1ghb2hiqcg5cqt6hq5h1vhtp.apps.googleusercontent.com',
+    iosClientId: '755269897635-j33puhu1elkr75ipodon5acq1o4bgrr4.apps.googleusercontent.com',
     iosBundleId: 'com.example.pocketSplit',
   );
+
 }
