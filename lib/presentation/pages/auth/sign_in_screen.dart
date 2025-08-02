@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/services/auth_service.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/presentation/pages/main/main_app_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -68,7 +69,12 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
             backgroundColor: AppTheme.primary2,
           ),
         );
-        // TODO: Navigate to home screen
+        // Navigate to main app screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MainAppScreen(),
+          ),
+        );
       } else if (mounted) {
         print('Sign-in was cancelled by user');
         ScaffoldMessenger.of(context).showSnackBar(
