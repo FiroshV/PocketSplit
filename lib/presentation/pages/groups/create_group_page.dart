@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
 
 class CreateGroupPage extends StatefulWidget {
@@ -13,9 +11,8 @@ class CreateGroupPage extends StatefulWidget {
 class _CreateGroupPageState extends State<CreateGroupPage> {
   final _formKey = GlobalKey<FormState>();
   final _groupNameController = TextEditingController();
-  final _imagePicker = ImagePicker();
   
-  File? _groupImage;
+  bool _hasGroupImage = false;
   String _selectedGroupType = 'Trip';
   
   // Trip specific fields
@@ -45,37 +42,27 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               ListTile(
                 leading: const Icon(Icons.photo_library),
                 title: const Text('Choose from Gallery'),
-                onTap: () async {
+                onTap: () {
                   Navigator.pop(context);
-                  final XFile? image = await _imagePicker.pickImage(
-                    source: ImageSource.gallery,
-                    maxWidth: 512,
-                    maxHeight: 512,
-                    imageQuality: 70,
+                  setState(() {
+                    _hasGroupImage = true;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Image picker coming soon!')),
                   );
-                  if (image != null) {
-                    setState(() {
-                      _groupImage = File(image.path);
-                    });
-                  }
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.photo_camera),
                 title: const Text('Take Photo'),
-                onTap: () async {
+                onTap: () {
                   Navigator.pop(context);
-                  final XFile? image = await _imagePicker.pickImage(
-                    source: ImageSource.camera,
-                    maxWidth: 512,
-                    maxHeight: 512,
-                    imageQuality: 70,
+                  setState(() {
+                    _hasGroupImage = true;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Camera picker coming soon!')),
                   );
-                  if (image != null) {
-                    setState(() {
-                      _groupImage = File(image.path);
-                    });
-                  }
                 },
               ),
             ],
@@ -119,14 +106,11 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
             color: AppTheme.lightGray,
             border: Border.all(color: AppTheme.neutralGray, width: 2),
           ),
-          child: _groupImage != null
-              ? ClipOval(
-                  child: Image.file(
-                    _groupImage!,
-                    fit: BoxFit.cover,
-                    width: 100,
-                    height: 100,
-                  ),
+          child: _hasGroupImage
+              ? const Icon(
+                  Icons.group,
+                  size: 40,
+                  color: AppTheme.primary2,
                 )
               : const Icon(
                   Icons.add_a_photo,
