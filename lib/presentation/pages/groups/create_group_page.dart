@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/core/di/service_locator.dart';
+import 'package:pocket_split/core/services/auth_service.dart';
+import 'package:pocket_split/domain/entities/group.dart';
+import 'package:pocket_split/domain/usecases/create_group.dart';
 
 class CreateGroupPage extends StatefulWidget {
   const CreateGroupPage({super.key});
@@ -14,6 +18,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   
   bool _hasGroupImage = false;
   String _selectedGroupType = 'Trip';
+  bool _isLoading = false;
   
   // Trip specific fields
   DateTime? _startDate;
@@ -496,16 +501,69 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
     }
   }
 
-  void _createGroup() {
+  void _createGroup() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement group creation logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Creating group "${_groupNameController.text}"...'),
-          backgroundColor: AppTheme.primary2,
-        ),
+      final currentUser = getIt<AuthService>().currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to create a group'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final group = Group(
+        id: '',
+        name: _groupNameController.text.trim(),
+        type: _selectedGroupType,
+        createdBy: currentUser.uid,
+        createdAt: DateTime.now(),
+        memberIds: [currentUser.uid],
+        currency: 'USD',
+        startDate: _startDate,
+        endDate: _endDate,
+        enableSettleUpReminders: _enableSettleUpReminders,
+        enableBalanceAlert: _enableBalanceAlert,
+        balanceAlertAmount: _balanceAlertAmount,
       );
-      Navigator.pop(context);
+
+      // Show loading state
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Use the service locator directly to create the group
+        final createGroupUseCase = getIt<CreateGroup>();
+        await createGroupUseCase(group);
+        
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Group "${_groupNameController.text}" created successfully!'),
+              backgroundColor: AppTheme.primary2,
+            ),
+          );
+          Navigator.pop(context, true); // Return true to indicate success
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create group: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -569,19 +627,28 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _createGroup,
+                  onPressed: _isLoading ? null : _createGroup,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primary2,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text(
-                    'Create Group',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text(
+                          'Create Group',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ],

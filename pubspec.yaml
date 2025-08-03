@@ -47,6 +47,7 @@ dependencies:
   # Other essential dependencies
   google_sign_in: ^6.2.1
   image_picker: ^1.1.2
+  get_it: ^7.6.4
 
 dev_dependencies:
   flutter_test:

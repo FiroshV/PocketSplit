@@ -2,6 +2,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
 import 'package:pocket_split/presentation/pages/auth/sign_in_screen.dart';
+import 'package:pocket_split/core/di/service_locator.dart';
+import 'package:pocket_split/core/utils/firestore_config.dart';
 
 import 'firebase_options.dart';
 
@@ -10,6 +12,11 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Configure Firestore for optimal performance
+  FirestoreConfig.configureForDevelopment();
+  
+  setupServiceLocator();
   runApp(const PocketSplitApp());
 }
 
