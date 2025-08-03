@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/core/constants/currencies.dart';
 import 'package:pocket_split/core/di/service_locator.dart';
 import 'package:pocket_split/core/services/auth_service.dart';
+import 'package:pocket_split/core/services/currency_location_service.dart';
 import 'package:pocket_split/domain/entities/group.dart';
 import 'package:pocket_split/domain/usecases/create_group.dart';
+import 'package:pocket_split/domain/usecases/get_user_settings.dart';
 
 class CreateGroupPage extends StatefulWidget {
   const CreateGroupPage({super.key});
@@ -19,6 +22,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   bool _hasGroupImage = false;
   String _selectedGroupType = 'Trip';
   bool _isLoading = false;
+  String _selectedCurrency = 'USD';
   
   // Trip specific fields
   DateTime? _startDate;
@@ -32,9 +36,42 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   double _balanceAlertAmount = 100.0;
 
   @override
+  void initState() {
+    super.initState();
+    _initializeDefaultCurrency();
+  }
+
+  @override
   void dispose() {
     _groupNameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initializeDefaultCurrency() async {
+    try {
+      final currentUser = getIt<AuthService>().currentUser;
+      if (currentUser != null) {
+        // Try to get user's base currency from settings
+        final getUserSettings = getIt<GetUserSettings>();
+        final userSettings = await getUserSettings(currentUser.uid);
+        
+        if (userSettings != null) {
+          setState(() {
+            _selectedCurrency = userSettings.baseCurrency;
+          });
+          return;
+        }
+      }
+      
+      // Fallback to location-based detection
+      final detectedCurrency = await CurrencyLocationService.detectCurrencyFromLocation();
+      setState(() {
+        _selectedCurrency = detectedCurrency;
+      });
+    } catch (e) {
+      // Keep default USD if everything fails
+      debugPrint('Error initializing default currency: $e');
+    }
   }
 
   Widget _buildCustomSwitch({
@@ -200,6 +237,159 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
           }).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildCurrencySelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Currency',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _showCurrencyPicker,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppTheme.neutralGray),
+              borderRadius: BorderRadius.circular(12),
+              color: AppTheme.lightGray,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.attach_money,
+                      color: AppTheme.secondary2,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _selectedCurrency,
+                      style: TextStyle(
+                        color: AppTheme.darkGray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const Icon(Icons.keyboard_arrow_down, color: AppTheme.neutralGray),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCurrencyPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Select Currency',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Popular currencies first
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      children: [
+                        // Popular section
+                        Text(
+                          'Popular',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: AppTheme.secondary2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD'].map((code) {
+                          return _buildCurrencyOption(code);
+                        }),
+                        
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                        
+                        // All currencies
+                        Text(
+                          'All Currencies',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: AppTheme.secondary2,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...CurrencyConstants.supportedCurrencies.map((currency) {
+                          return _buildCurrencyOption(currency.code);
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCurrencyOption(String currencyCode) {
+    final currency = CurrencyConstants.getCurrencyByCode(currencyCode);
+    if (currency == null) return Container();
+    
+    final isSelected = _selectedCurrency == currencyCode;
+    
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: isSelected ? AppTheme.primary2 : Colors.grey.shade200,
+        child: Text(
+          currency.symbol,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.grey.shade600,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      title: Text('${currency.code} - ${currency.name}'),
+      subtitle: Text(currency.country),
+      trailing: isSelected ? const Icon(Icons.check, color: AppTheme.secondary2) : null,
+      onTap: () {
+        setState(() {
+          _selectedCurrency = currencyCode;
+        });
+        Navigator.pop(context);
+      },
     );
   }
 
@@ -521,7 +711,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         createdBy: currentUser.uid,
         createdAt: DateTime.now(),
         memberIds: [currentUser.uid],
-        currency: 'USD',
+        currency: _selectedCurrency,
         startDate: _startDate,
         endDate: _endDate,
         enableSettleUpReminders: _enableSettleUpReminders,
@@ -617,6 +807,10 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
               // Group Type Selector
               _buildGroupTypeSelector(),
+              const SizedBox(height: 24),
+
+              // Currency Selector
+              _buildCurrencySelector(),
               const SizedBox(height: 24),
 
               // Type-specific fields

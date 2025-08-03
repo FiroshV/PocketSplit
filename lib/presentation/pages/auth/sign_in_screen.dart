@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/services/auth_service.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/core/di/service_locator.dart';
+import 'package:pocket_split/domain/usecases/initialize_user_settings.dart';
 import 'package:pocket_split/presentation/pages/main/main_app_screen.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -63,18 +65,36 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
       
       if (userCredential != null && mounted) {
         print('Sign-in successful!');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Successfully signed in!'),
-            backgroundColor: AppTheme.primary2,
-          ),
-        );
-        // Navigate to main app screen
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const MainAppScreen(),
-          ),
-        );
+        
+        // Initialize user settings with location-based currency detection
+        try {
+          final initializeUserSettings = getIt<InitializeUserSettings>();
+          await initializeUserSettings(
+            userId: userCredential.user!.uid,
+            displayName: userCredential.user!.displayName ?? 'User',
+            email: userCredential.user!.email ?? '',
+            photoUrl: userCredential.user!.photoURL,
+          );
+          print('User settings initialized successfully');
+        } catch (e) {
+          print('Failed to initialize user settings: $e');
+          // Continue anyway, settings can be created later
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Successfully signed in!'),
+              backgroundColor: AppTheme.primary2,
+            ),
+          );
+          // Navigate to main app screen
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const MainAppScreen(),
+            ),
+          );
+        }
       } else if (mounted) {
         print('Sign-in was cancelled by user');
         ScaffoldMessenger.of(context).showSnackBar(
