@@ -82,12 +82,6 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
         }
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Successfully signed in!'),
-              backgroundColor: AppTheme.primary2,
-            ),
-          );
           // Navigate to main app screen
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(

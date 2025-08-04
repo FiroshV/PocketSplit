@@ -60,5 +60,7 @@
 	<string>This app needs location access to detect your local currency for expense tracking.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to detect your local currency for expense tracking.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>This app needs access to your contacts to help you add friends and split expenses.</string>
 </dict>
 </plist>
