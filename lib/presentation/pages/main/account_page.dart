@@ -22,11 +22,8 @@ class AccountPage extends StatelessWidget {
         final bloc = getIt<UserSettingsBloc>();
         final currentUser = getIt<AuthService>().currentUser;
         if (currentUser != null) {
-          // Ensure currency detection is triggered and force refresh
-          CurrencyLocationService.forceDetection().then((detectedCurrency) {
-            debugPrint('AccountPage: Force detection completed, detected: $detectedCurrency');
-          });
-          // Try to load existing settings first, then initialize if needed
+          // Only load existing settings, don't force currency detection
+          // Let the user manually select their preferred currency
           bloc.add(LoadUserSettingsEvent(currentUser.uid));
         }
         return bloc;
@@ -38,7 +35,11 @@ class AccountPage extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
         ),
-        body: BlocConsumer<UserSettingsBloc, UserSettingsState>(
+        body: BlocListener<UserSettingsBloc, UserSettingsState>(
+          listenWhen: (previous, current) {
+            // Only listen to error states to avoid unnecessary rebuilds
+            return current is UserSettingsError;
+          },
           listener: (context, state) {
             if (state is UserSettingsError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -47,43 +48,50 @@ class AccountPage extends StatelessWidget {
                   backgroundColor: Colors.red,
                 ),
               );
-              
+
               // Try to initialize settings if they don't exist
               final currentUser = getIt<AuthService>().currentUser;
               if (currentUser != null && state.message.contains('not found')) {
-                context.read<UserSettingsBloc>().add(InitializeUserSettingsEvent(
-                  userId: currentUser.uid,
-                  displayName: currentUser.displayName ?? 'User',
-                  email: currentUser.email ?? '',
-                  photoUrl: currentUser.photoURL,
-                ));
+                context.read<UserSettingsBloc>().add(
+                  InitializeUserSettingsEvent(
+                    userId: currentUser.uid,
+                    displayName: currentUser.displayName ?? 'User',
+                    email: currentUser.email ?? '',
+                    photoUrl: currentUser.photoURL,
+                  ),
+                );
               }
-            } else if (state is BaseCurrencyUpdated) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Base currency updated to ${state.currencyCode}'),
-                  backgroundColor: AppTheme.primary2,
-                ),
-              );
             }
           },
-          builder: (context, state) {
-            if (state is UserSettingsLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            
+          child: BlocBuilder<UserSettingsBloc, UserSettingsState>(
+            buildWhen: (previous, current) {
+              // Don't rebuild the main page on BaseCurrencyUpdated - let individual widgets handle it
+              if (current is BaseCurrencyUpdated) return false;
+              
+              // Only rebuild on initial load and errors
+              return current is UserSettingsLoaded || 
+                     current is UserSettingsLoading || 
+                     current is UserSettingsError;
+            },
+            builder: (context, state) {
+              if (state is UserSettingsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
             final currentUser = getIt<AuthService>().currentUser;
-            final userSettings = state is UserSettingsLoaded ? state.userSettings : null;
-            
+            final userSettings = state is UserSettingsLoaded
+                ? state.userSettings
+                : null;
+
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
                   // Profile section
                   _buildProfileSection(context, currentUser, userSettings),
-                  
+
                   const SizedBox(height: 24),
-                  
+
                   // Settings list
                   Expanded(
                     child: ListView(
@@ -91,38 +99,44 @@ class AccountPage extends StatelessWidget {
                         // Currency Settings Section
                         _buildSectionHeader(context, 'Preferences'),
                         _buildCurrencyTile(context, userSettings),
-                        
+
                         // Temporary debug button
                         if (kDebugMode) ...[
                           ListTile(
                             leading: const Icon(Icons.bug_report),
                             title: const Text('Test Currency Detection'),
-                            subtitle: const Text('Debug: Test currency detection'),
+                            subtitle: const Text(
+                              'Debug: Test currency detection',
+                            ),
                             onTap: () => _testCurrencyDetection(context),
                           ),
                         ],
-                        
+
                         _buildSettingsTile(
                           context,
                           icon: Icons.notifications_outlined,
                           title: 'Notifications',
-                          trailing: userSettings?.notificationsEnabled == true 
+                          trailing: userSettings?.notificationsEnabled == true
                               ? const Icon(Icons.check, color: Colors.green)
                               : null,
-                          onTap: () => _toggleNotifications(context, userSettings),
+                          onTap: () =>
+                              _toggleNotifications(context, userSettings),
                         ),
-                        
+
                         _buildSettingsTile(
                           context,
                           icon: Icons.palette_outlined,
                           title: 'Theme',
-                          subtitle: _getThemeDisplayName(userSettings?.theme ?? 'system'),
-                          onTap: () => _showThemeSelector(context, userSettings),
+                          subtitle: _getThemeDisplayName(
+                            userSettings?.theme ?? 'system',
+                          ),
+                          onTap: () =>
+                              _showThemeSelector(context, userSettings),
                         ),
-                        
+
                         const SizedBox(height: 16),
                         _buildSectionHeader(context, 'Support'),
-                        
+
                         _buildSettingsTile(
                           context,
                           icon: Icons.help_outline,
@@ -135,17 +149,17 @@ class AccountPage extends StatelessWidget {
                           title: 'About',
                           onTap: () => _showComingSoon(context),
                         ),
-                        
+
                         const SizedBox(height: 16),
                         _buildSectionHeader(context, 'Account'),
-                        
+
                         _buildSettingsTile(
                           context,
                           icon: Icons.security_outlined,
                           title: 'Privacy & Security',
                           onTap: () => _showComingSoon(context),
                         ),
-                        
+
                         _buildSettingsTile(
                           context,
                           icon: Icons.logout,
@@ -159,7 +173,8 @@ class AccountPage extends StatelessWidget {
                 ],
               ),
             );
-          },
+            },
+          ),
         ),
       ),
     );
@@ -191,7 +206,9 @@ class AccountPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  userSettings?.displayName ?? currentUser?.displayName ?? 'User',
+                  userSettings?.displayName ??
+                      currentUser?.displayName ??
+                      'User',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 4),
@@ -201,12 +218,32 @@ class AccountPage extends StatelessWidget {
                 ),
                 if (userSettings?.baseCurrency != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    'Base Currency: ${userSettings!.baseCurrency}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.secondary2,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  BlocBuilder<UserSettingsBloc, UserSettingsState>(
+                    buildWhen: (previous, current) {
+                      // Rebuild on currency changes and when settings are loaded/updated
+                      if (previous is UserSettingsLoaded && current is UserSettingsLoaded) {
+                        return previous.userSettings.baseCurrency != current.userSettings.baseCurrency;
+                      }
+                      return current is UserSettingsLoaded || current is BaseCurrencyUpdated;
+                    },
+                    builder: (context, state) {
+                      String? currency;
+                      if (state is BaseCurrencyUpdated) {
+                        currency = state.currencyCode;
+                      } else if (state is UserSettingsLoaded) {
+                        currency = state.userSettings.baseCurrency;
+                      } else {
+                        currency = userSettings?.baseCurrency;
+                      }
+                      
+                      return Text(
+                        'Base Currency: $currency',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.secondary2,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    },
                   ),
                 ],
               ],
@@ -235,18 +272,42 @@ class AccountPage extends StatelessWidget {
   }
 
   Widget _buildCurrencyTile(BuildContext context, userSettings) {
-    final currency = userSettings?.baseCurrency != null
-        ? CurrencyConstants.getCurrencyByCode(userSettings!.baseCurrency)
-        : null;
+    return BlocBuilder<UserSettingsBloc, UserSettingsState>(
+      buildWhen: (previous, current) {
+        // Rebuild on currency changes and when settings are loaded/updated
+        if (previous is UserSettingsLoaded && current is UserSettingsLoaded) {
+          return previous.userSettings.baseCurrency != current.userSettings.baseCurrency;
+        }
+        return current is UserSettingsLoaded || current is BaseCurrencyUpdated;
+      },
+      builder: (context, state) {
+        dynamic currentSettings = userSettings;
+        String? currencyCode;
+        
+        if (state is BaseCurrencyUpdated) {
+          currencyCode = state.currencyCode;
+          currentSettings = userSettings; // Use the existing userSettings as base
+        } else if (state is UserSettingsLoaded) {
+          currentSettings = state.userSettings;
+          currencyCode = currentSettings?.baseCurrency;
+        } else {
+          currencyCode = userSettings?.baseCurrency;
+        }
+        
+        final currency = currencyCode != null
+            ? CurrencyConstants.getCurrencyByCode(currencyCode)
+            : null;
 
-    return ListTile(
-      leading: const Icon(Icons.attach_money),
-      title: const Text('Base Currency'),
-      subtitle: currency != null
-          ? Text('${currency.symbol} ${currency.code} - ${currency.name}')
-          : const Text('Tap to set your preferred currency'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showCurrencySelector(context, userSettings),
+        return ListTile(
+          leading: const Icon(Icons.attach_money),
+          title: const Text('Base Currency'),
+          subtitle: currency != null
+              ? Text('${currency.symbol} ${currency.code} - ${currency.name}')
+              : const Text('Tap to set your preferred currency'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _showCurrencySelector(context, currentSettings),
+        );
+      },
     );
   }
 
@@ -260,15 +321,10 @@ class AccountPage extends StatelessWidget {
     bool isDestructive = false,
   }) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : null,
-      ),
+      leading: Icon(icon, color: isDestructive ? Colors.red : null),
       title: Text(
         title,
-        style: TextStyle(
-          color: isDestructive ? Colors.red : null,
-        ),
+        style: TextStyle(color: isDestructive ? Colors.red : null),
       ),
       subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: trailing ?? const Icon(Icons.chevron_right),
@@ -277,11 +333,27 @@ class AccountPage extends StatelessWidget {
   }
 
   void _showCurrencySelector(BuildContext context, userSettings) {
+    // Check if user settings are loaded before showing the bottom sheet
+    final currentState = context.read<UserSettingsBloc>().state;
+    debugPrint('💰 Opening currency selector, current state: ${currentState.runtimeType}');
+    
+    if (currentState is! UserSettingsLoaded && currentState is! BaseCurrencyUpdated) {
+      debugPrint('⚠️ User settings not loaded, reloading...');
+      final currentUser = getIt<AuthService>().currentUser;
+      if (currentUser != null) {
+        context.read<UserSettingsBloc>().add(LoadUserSettingsEvent(currentUser.uid));
+      }
+      return;
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (BuildContext context) {
-        return _CurrencySelectorBottomSheet(userSettings: userSettings);
+      builder: (BuildContext bottomSheetContext) {
+        return BlocProvider.value(
+          value: context.read<UserSettingsBloc>(),
+          child: _CurrencySelectorBottomSheet(userSettings: userSettings),
+        );
       },
     );
   }
@@ -384,7 +456,7 @@ class AccountPage extends StatelessWidget {
                 ),
               );
             }
-            
+
             if (snapshot.hasError) {
               return AlertDialog(
                 title: const Text('Currency Test Error'),
@@ -397,7 +469,7 @@ class AccountPage extends StatelessWidget {
                 ],
               );
             }
-            
+
             final results = snapshot.data ?? {};
             return AlertDialog(
               title: const Text('Currency Detection Results'),
@@ -406,21 +478,25 @@ class AccountPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...results.entries.map((entry) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: RichText(
-                        text: TextSpan(
-                          style: Theme.of(context).textTheme.bodyMedium,
-                          children: [
-                            TextSpan(
-                              text: '${entry.key}: ',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(text: entry.value),
-                          ],
+                    ...results.entries.map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: RichText(
+                          text: TextSpan(
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            children: [
+                              TextSpan(
+                                text: '${entry.key}: ',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              TextSpan(text: entry.value),
+                            ],
+                          ),
                         ),
                       ),
-                    )),
+                    ),
                   ],
                 ),
               ),
@@ -436,37 +512,38 @@ class AccountPage extends StatelessWidget {
       },
     );
   }
-  
+
   Future<Map<String, String>> _performCurrencyTest() async {
     final results = <String, String>{};
-    
+
     try {
       // Get platform info
       results['Platform Locale'] = Platform.localeName;
       results['Platform OS'] = Platform.operatingSystem;
-      
+
       // Test CurrencyUtils
       final detectedCode = CurrencyUtils.getCurrencyCode();
       final detectedSymbol = CurrencyUtils.getCurrencySymbol();
       results['Utils Detected'] = '$detectedCode ($detectedSymbol)';
-      
+
       // Test CurrencyLocationService
       CurrencyLocationService.clearCache();
-      final serviceCurrency = await CurrencyLocationService.detectCurrencyFromLocation();
+      final serviceCurrency =
+          await CurrencyLocationService.detectCurrencyFromLocation();
       results['Service Detected'] = serviceCurrency;
-      
+
       // Check currency details
       final currency = CurrencyConstants.getCurrencyByCode(serviceCurrency);
       if (currency != null) {
         results['Currency Name'] = currency.name;
         results['Currency Country'] = currency.country;
         results['Hardcoded Symbol'] = currency.symbol;
-        
+
         // Test getLocaleSymbol
         final localeSymbol = currency.getLocaleSymbol();
         results['Locale Symbol'] = localeSymbol;
       }
-      
+
       // Test country mapping
       final parts = Platform.localeName.split('_');
       if (parts.length >= 2) {
@@ -475,18 +552,17 @@ class AccountPage extends StatelessWidget {
         results['Country Code'] = countryCode;
         results['Mapped Currency'] = mappedCurrency ?? 'Not found';
       }
-      
     } catch (e) {
       results['Error'] = e.toString();
     }
-    
+
     return results;
   }
 
   void _showComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Feature coming soon!')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Feature coming soon!')));
   }
 }
 
@@ -496,18 +572,26 @@ class _CurrencySelectorBottomSheet extends StatefulWidget {
   const _CurrencySelectorBottomSheet({required this.userSettings});
 
   @override
-  State<_CurrencySelectorBottomSheet> createState() => _CurrencySelectorBottomSheetState();
+  State<_CurrencySelectorBottomSheet> createState() =>
+      _CurrencySelectorBottomSheetState();
 }
 
-class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomSheet> {
+class _CurrencySelectorBottomSheetState
+    extends State<_CurrencySelectorBottomSheet> {
   final TextEditingController _searchController = TextEditingController();
   List<Currency> _filteredCurrencies = [];
+  String? _detectedCurrency;
+  String? _selectedCurrency;
 
   @override
   void initState() {
     super.initState();
     _filteredCurrencies = CurrencyConstants.supportedCurrencies;
     _searchController.addListener(_onSearchChanged);
+    // Get detected currency once during initialization
+    _detectedCurrency = CurrencyLocationService.getDetectedCurrency();
+    // Initialize selected currency
+    _selectedCurrency = widget.userSettings?.baseCurrency;
   }
 
   @override
@@ -519,14 +603,15 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
   void _onSearchChanged() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _filteredCurrencies = CurrencyConstants.supportedCurrencies.where((currency) {
+      _filteredCurrencies = CurrencyConstants.supportedCurrencies.where((
+        currency,
+      ) {
         return currency.code.toLowerCase().contains(query) ||
-               currency.name.toLowerCase().contains(query) ||
-               currency.country.toLowerCase().contains(query);
+            currency.name.toLowerCase().contains(query) ||
+            currency.country.toLowerCase().contains(query);
       }).toList();
     });
   }
-
 
   void _testUserCurrencySymbol() async {
     // Show loading indicator
@@ -537,7 +622,10 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
             SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 16),
             Text('Detecting currency from location...'),
@@ -551,30 +639,32 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
       // Get both locale-based and location-based symbols
       final localeSymbol = CurrencyUtils.getCurrencySymbol();
       debugPrint('🔍 Starting location detection test...');
-      
+
       // Clear cache to force fresh detection
       CurrencyLocationService.clearCache();
-      
+
       // Get detailed location info for debugging
-      final locationCurrency = await CurrencyLocationService.detectCurrencyFromLocation();
+      final locationCurrency =
+          await CurrencyLocationService.detectCurrencyFromLocation();
       debugPrint('🌍 Location service returned: $locationCurrency');
-      
-      final locationSymbol = await CurrencyUtils.getCurrencySymbolFromLocation();
-      
+
+      final locationSymbol =
+          await CurrencyUtils.getCurrencySymbolFromLocation();
+
       debugPrint('📍 Locale-based currency symbol: $localeSymbol');
       debugPrint('🛰️ Location-based currency symbol: $locationSymbol');
-      
+
       // Get more detailed debug info
       final localeInfo = Platform.localeName;
       final detectedFromService = CurrencyLocationService.getDetectedCurrency();
-      
+
       debugPrint('🔧 Debug info:');
       debugPrint('   - Platform.localeName: $localeInfo');
       debugPrint('   - Service detected currency: $detectedFromService');
-      
+
       // Check if widget is still mounted before showing dialog
       if (!mounted) return;
-      
+
       // Show results dialog with more details
       showDialog(
         context: context,
@@ -595,7 +685,9 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
                     'Location-based (GPS/IP): $locationSymbol',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: localeSymbol != locationSymbol ? AppTheme.secondary2 : null,
+                      color: localeSymbol != locationSymbol
+                          ? AppTheme.secondary2
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -612,15 +704,24 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
                   const SizedBox(height: 4),
                   Text(
                     'Platform Locale: $localeInfo',
-                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                   Text(
                     'Service Result: $detectedFromService',
-                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                   Text(
                     'Location Currency: $locationCurrency',
-                    style: const TextStyle(fontSize: 11, fontFamily: 'monospace'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                   if (localeSymbol != locationSymbol) ...[
                     const SizedBox(height: 12),
@@ -663,151 +764,234 @@ class _CurrencySelectorBottomSheetState extends State<_CurrencySelectorBottomShe
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.5,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Select Base Currency',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This will be your default currency for new groups',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              
-              // Search Bar
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search currencies...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              
-              // Test Currency Symbol Button
-              ElevatedButton.icon(
-                onPressed: _testUserCurrencySymbol,
-                icon: const Icon(Icons.info_outline, size: 18),
-                label: const Text('Check My Currency Symbol'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary1,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Currency List
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: _filteredCurrencies.length,
-                  itemBuilder: (context, index) {
-                    final currency = _filteredCurrencies[index];
-                    final isSelected = widget.userSettings?.baseCurrency == currency.code;
-                    final detectedCurrency = CurrencyLocationService.getDetectedCurrency();
-                    final isDetected = detectedCurrency != null && detectedCurrency == currency.code;
-                    
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isSelected 
-                            ? AppTheme.primary2 
-                            : Colors.grey.shade200,
-                        child: Text(
-                          currency.symbol,
-                          style: TextStyle(
-                            color: isSelected ? Colors.black : Colors.grey.shade600,
-                            fontWeight: FontWeight.bold,
-                          ),
+    return BlocListener<UserSettingsBloc, UserSettingsState>(
+      listener: (context, state) {
+        debugPrint('🔔 Bottom sheet listener received state: ${state.runtimeType}');
+        
+        if (state is BaseCurrencyUpdated) {
+          // Don't close the bottom sheet - keep it open for better UX
+          debugPrint(
+            '✅ Currency updated successfully to ${state.currencyCode}',
+          );
+          // Update local state to reflect the change
+          setState(() {
+            _selectedCurrency = state.currencyCode;
+          });
+        } else if (state is UserSettingsError) {
+          // Show error but don't close
+          debugPrint('❌ Currency update failed: ${state.message}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to update currency: ${state.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else if (state is UserSettingsLoaded) {
+          // Update the current currency when settings are reloaded
+          debugPrint('📋 Settings loaded, currency: ${state.userSettings.baseCurrency}');
+          setState(() {
+            _selectedCurrency = state.userSettings.baseCurrency;
+          });
+        }
+      },
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.5,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    // Header
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Select Base Currency',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This will be your default currency for new groups',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Search Bar
+                    TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Search currencies...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                        _searchController.clear();
+                                      },
+                              )
+                            : null,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      title: Text(
-                        '${currency.code} - ${currency.name}',
-                        style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Test Currency Symbol Button
+                    ElevatedButton.icon(
+                      onPressed: _testUserCurrencySymbol,
+                      icon: const Icon(Icons.info_outline, size: 18),
+                      label: const Text('Check My Currency Symbol'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary1,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
                       ),
-                      subtitle: Row(
-                        children: [
-                          Text(currency.country),
-                          if (isDetected) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primary1.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Currency List
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: _filteredCurrencies.length,
+                        itemBuilder: (context, index) {
+                          final currency = _filteredCurrencies[index];
+                          final isSelected = _selectedCurrency == currency.code;
+                          final isDetected =
+                              _detectedCurrency != null &&
+                              _detectedCurrency == currency.code;
+
+                          return Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              splashColor: Colors.transparent,
+                              highlightColor: Colors.transparent,
+                              onTap: () {
+                                    debugPrint(
+                                      '🎯 Currency selected: ${currency.code}',
+                                    );
+                                    
+                                    // Update UI immediately for instant feedback
+                                    setState(() {
+                                      _selectedCurrency = currency.code;
+                                    });
+                                    
+                                    final currentUser =
+                                        getIt<AuthService>().currentUser;
+                                    if (currentUser != null) {
+                                      // Check current BLoC state before sending event
+                                      final currentState = context.read<UserSettingsBloc>().state;
+                                      debugPrint('🔍 Current BLoC state: ${currentState.runtimeType}');
+                                      
+                                      if (currentState is UserSettingsLoaded || currentState is BaseCurrencyUpdated) {
+                                        debugPrint(
+                                          '📤 Sending UpdateBaseCurrencyEvent for ${currency.code}',
+                                        );
+                                        context.read<UserSettingsBloc>().add(
+                                          UpdateBaseCurrencyEvent(
+                                            userId: currentUser.uid,
+                                            currencyCode: currency.code,
+                                          ),
+                                        );
+                                      } else {
+                                        debugPrint('❌ BLoC state is not loaded: ${currentState.runtimeType}');
+                                        // Try to reload user settings first
+                                        context.read<UserSettingsBloc>().add(
+                                          LoadUserSettingsEvent(currentUser.uid),
+                                        );
+                                      }
+                                    } else {
+                                      debugPrint('❌ No current user found');
+                                      Navigator.pop(context);
+                                    }
+                                  },
+                              child: ListTile(
+                              leading: CircleAvatar(
+                              backgroundColor: isSelected
+                                  ? AppTheme.primary2
+                                  : Colors.grey.shade200,
                               child: Text(
-                                'Detected',
+                                currency.symbol,
                                 style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.secondary2,
-                                  fontWeight: FontWeight.w500,
+                                  color: isSelected
+                                      ? Colors.black
+                                      : Colors.grey.shade600,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ],
-                        ],
-                      ),
-                      trailing: isSelected 
-                          ? const Icon(Icons.check, color: AppTheme.secondary2)
-                          : null,
-                      onTap: () {
-                        final currentUser = getIt<AuthService>().currentUser;
-                        if (currentUser != null) {
-                          context.read<UserSettingsBloc>().add(
-                            UpdateBaseCurrencyEvent(
-                              userId: currentUser.uid,
-                              currencyCode: currency.code,
+                            title: Text(
+                              '${currency.code} - ${currency.name}',
+                              style: TextStyle(
+                                fontWeight: isSelected
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                            subtitle: Row(
+                              children: [
+                                Text(currency.country),
+                                if (isDetected) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary1.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Detected',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: AppTheme.secondary2,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            trailing: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: AppTheme.secondary2,
+                                  )
+                                : null,
+                              ),
                             ),
                           );
-                        }
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              );
+        },
+      ),
     );
   }
 }

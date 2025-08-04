@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../domain/entities/user_settings.dart';
 import '../../../domain/repositories/user_settings_repository.dart';
 import '../../../domain/usecases/get_user_settings.dart';
 import '../../../domain/usecases/update_user_settings.dart';
@@ -11,6 +13,9 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
   final GetUserSettings _getUserSettings;
   final UpdateUserSettings _updateUserSettings;
   final InitializeUserSettings _initializeUserSettings;
+  
+  // Keep track of the last loaded user settings
+  UserSettings? _lastLoadedSettings;
 
   UserSettingsBloc(
     this._userSettingsRepository,
@@ -35,6 +40,7 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
       final userSettings = await _getUserSettings(event.userId);
       
       if (userSettings != null) {
+        _lastLoadedSettings = userSettings; // Store the loaded settings
         emit(UserSettingsLoaded(userSettings));
       } else {
         emit(const UserSettingsError('User settings not found'));
@@ -56,6 +62,7 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
         email: event.email,
         photoUrl: event.photoUrl,
       );
+      _lastLoadedSettings = userSettings; // Store the initialized settings
       emit(UserSettingsLoaded(userSettings));
     } catch (e) {
       emit(UserSettingsError('Failed to initialize user settings: ${e.toString()}'));
@@ -68,23 +75,47 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
   ) async {
     try {
       final currentState = state;
+      UserSettings? settingsToUpdate;
+      
       if (currentState is UserSettingsLoaded) {
-        emit(UserSettingsLoading());
+        settingsToUpdate = currentState.userSettings;
+      } else if (currentState is BaseCurrencyUpdated && _lastLoadedSettings != null) {
+        // Use the last loaded settings when current state is BaseCurrencyUpdated
+        settingsToUpdate = _lastLoadedSettings;
+      }
+      
+      if (settingsToUpdate != null) {
+        debugPrint('🔄 Updating currency from ${settingsToUpdate.baseCurrency} to ${event.currencyCode}');
         
+        // Update database first
         await _userSettingsRepository.updateBaseCurrency(
           event.userId,
           event.currencyCode,
         );
         
-        final updatedSettings = currentState.userSettings.copyWith(
+        debugPrint('✅ Database updated successfully');
+        
+        // Update local state
+        final updatedSettings = settingsToUpdate.copyWith(
           baseCurrency: event.currencyCode,
           updatedAt: DateTime.now(),
         );
         
+        // Update the stored settings
+        _lastLoadedSettings = updatedSettings;
+        
+        // Emit updated state
         emit(UserSettingsLoaded(updatedSettings));
+        // Emit specific currency update event for UI feedback
         emit(BaseCurrencyUpdated(event.currencyCode));
+        
+        debugPrint('🎯 State updated: ${updatedSettings.baseCurrency}');
+      } else {
+        debugPrint('❌ Cannot update currency - no loaded state or stored settings');
+        emit(UserSettingsError('User settings not loaded'));
       }
     } catch (e) {
+      debugPrint('❌ Error updating currency: $e');
       emit(UserSettingsError('Failed to update base currency: ${e.toString()}'));
     }
   }
@@ -96,6 +127,7 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
     try {
       emit(UserSettingsLoading());
       await _updateUserSettings(event.userSettings);
+      _lastLoadedSettings = event.userSettings; // Store the updated settings
       emit(UserSettingsLoaded(event.userSettings));
       emit(UserSettingsUpdated(event.userSettings));
     } catch (e) {
@@ -117,6 +149,7 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
         
         emit(UserSettingsLoading());
         await _updateUserSettings(updatedSettings);
+        _lastLoadedSettings = updatedSettings; // Store the updated settings
         emit(UserSettingsLoaded(updatedSettings));
       }
     } catch (e) {
@@ -138,6 +171,7 @@ class UserSettingsBloc extends Bloc<UserSettingsEvent, UserSettingsState> {
         
         emit(UserSettingsLoading());
         await _updateUserSettings(updatedSettings);
+        _lastLoadedSettings = updatedSettings; // Store the updated settings
         emit(UserSettingsLoaded(updatedSettings));
       }
     } catch (e) {
