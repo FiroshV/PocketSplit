@@ -5,6 +5,7 @@ import 'package:pocket_split/core/di/service_locator.dart';
 import 'package:pocket_split/core/services/auth_service.dart';
 import 'package:pocket_split/core/utils/firestore_config.dart';
 import 'package:pocket_split/presentation/pages/groups/create_group_page.dart';
+import 'package:pocket_split/presentation/pages/groups/simple_group_detail_page.dart';
 import 'package:pocket_split/presentation/bloc/group/group_bloc.dart';
 import 'package:pocket_split/presentation/bloc/group/group_event.dart';
 import 'package:pocket_split/presentation/bloc/group/group_state.dart';
@@ -12,7 +13,7 @@ import 'package:pocket_split/presentation/bloc/group/group_state.dart';
 class GroupsPage extends StatelessWidget {
   const GroupsPage({super.key});
 
-  void _navigateToCreateGroup(BuildContext context) async {
+  void _navigateToCreateGroup(BuildContext context, GroupBloc groupBloc) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -21,6 +22,34 @@ class GroupsPage extends StatelessWidget {
     );
     // If group was created successfully, refresh the groups list
     if (result == true && context.mounted) {
+      final currentUser = getIt<AuthService>().currentUser;
+      if (currentUser != null) {
+        // Add a small delay to ensure the group is saved to Firestore
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (context.mounted) {
+          groupBloc.add(LoadUserGroupsEvent(currentUser.uid));
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Group created! Refreshing list...'),
+              backgroundColor: AppTheme.primary2,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  void _navigateToGroupDetail(BuildContext context, dynamic group) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SimpleGroupDetailPage(group: group),
+      ),
+    );
+    // Refresh the groups list when returning
+    if (context.mounted) {
       final currentUser = getIt<AuthService>().currentUser;
       if (currentUser != null) {
         context.read<GroupBloc>().add(LoadUserGroupsEvent(currentUser.uid));
@@ -39,139 +68,144 @@ class GroupsPage extends StatelessWidget {
         }
         return bloc;
       },
-      child: SafeArea(
-        child: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Action buttons row
-                Row(
+      child: Builder(
+        builder: (context) {
+          final groupBloc = BlocProvider.of<GroupBloc>(context);
+          return SafeArea(
+            child: Scaffold(
+              body: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _navigateToCreateGroup(context),
-                        icon: const Icon(Icons.group_add),
-                        label: const Text('Add Group'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: AppTheme.primary2,
-                          foregroundColor: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          // TODO: Navigate to Add Expense screen
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Add Expense feature coming soon!'),
+                    // Action buttons row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _navigateToCreateGroup(context, groupBloc),
+                            icon: const Icon(Icons.group_add),
+                            label: const Text('Add Group'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: AppTheme.primary2,
+                              foregroundColor: Colors.black,
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.receipt_long),
-                        label: const Text('Add Expense'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Click on a group to add expenses to it!'),
+                                  backgroundColor: AppTheme.secondary2,
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.receipt_long),
+                            label: const Text('Add Expense'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+            
+                    // Groups list section
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Your Groups',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 16),
+            
+                          // BLoC builder for groups list
+                          Expanded(
+                            child: BlocBuilder<GroupBloc, GroupState>(
+                              builder: (context, state) {
+                                if (state is GroupLoading) {
+                                  return const Center(child: CircularProgressIndicator());
+                                } else if (state is GroupsLoaded) {
+                                  if (state.groups.isEmpty) {
+                                    return _buildEmptyState(context, groupBloc);
+                                  }
+                                  return _buildGroupsList(state.groups);
+                                } else if (state is GroupError) {
+                                  return Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.error_outline,
+                                          size: 64,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Unable to load groups',
+                                          style: Theme.of(context).textTheme.titleMedium,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                                          child: Text(
+                                            FirestoreConfig.getErrorSolution(state.message),
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context).textTheme.bodySmall,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            OutlinedButton(
+                                              onPressed: () {
+                                                final currentUser = getIt<AuthService>().currentUser;
+                                                if (currentUser != null) {
+                                                  groupBloc.add(LoadUserGroupsEvent(currentUser.uid));
+                                                }
+                                              },
+                                              child: const Text('Retry'),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            ElevatedButton(
+                                              onPressed: () => _navigateToCreateGroup(context, groupBloc),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppTheme.primary2,
+                                                foregroundColor: Colors.black,
+                                              ),
+                                              child: const Text('Create First Group'),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                                return _buildEmptyState(context, groupBloc);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-        
-                // Groups list section
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Your Groups',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 16),
-        
-                      // BLoC builder for groups list
-                      Expanded(
-                        child: BlocBuilder<GroupBloc, GroupState>(
-                          builder: (context, state) {
-                            if (state is GroupLoading) {
-                              return const Center(child: CircularProgressIndicator());
-                            } else if (state is GroupsLoaded) {
-                              if (state.groups.isEmpty) {
-                                return _buildEmptyState(context);
-                              }
-                              return _buildGroupsList(state.groups);
-                            } else if (state is GroupError) {
-                              return Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      size: 64,
-                                      color: Colors.grey.shade400,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      'Unable to load groups',
-                                      style: Theme.of(context).textTheme.titleMedium,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                                      child: Text(
-                                        FirestoreConfig.getErrorSolution(state.message),
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        OutlinedButton(
-                                          onPressed: () {
-                                            final currentUser = getIt<AuthService>().currentUser;
-                                            if (currentUser != null) {
-                                              context.read<GroupBloc>().add(LoadUserGroupsEvent(currentUser.uid));
-                                            }
-                                          },
-                                          child: const Text('Retry'),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        ElevatedButton(
-                                          onPressed: () => _navigateToCreateGroup(context),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppTheme.primary2,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                          child: const Text('Create First Group'),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                            return _buildEmptyState(context);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, GroupBloc groupBloc) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -192,7 +226,7 @@ class GroupsPage extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => _navigateToCreateGroup(context),
+            onPressed: () => _navigateToCreateGroup(context, groupBloc),
 
             icon: const Icon(Icons.add, color: Colors.black),
             label: const Text(
@@ -272,14 +306,7 @@ class GroupsPage extends StatelessWidget {
                 ),
               ],
             ),
-            onTap: () {
-              // TODO: Navigate to group detail page
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Viewing ${group.name} - Coming soon!'),
-                ),
-              );
-            },
+            onTap: () => _navigateToGroupDetail(context, group),
           ),
         );
       },

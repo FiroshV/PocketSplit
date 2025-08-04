@@ -12,7 +12,7 @@ class FirebaseGroupRepository implements GroupRepository {
   Future<String> createGroup(Group group) async {
     try {
       final groupModel = GroupModel(
-        id: '',
+        id: group.id,
         name: group.name,
         type: group.type,
         createdBy: group.createdBy,
@@ -29,6 +29,11 @@ class FirebaseGroupRepository implements GroupRepository {
       final docRef = await _firestore
           .collection(_collection)
           .add(groupModel.toFirestore());
+      
+      await _firestore
+          .collection(_collection)
+          .doc(docRef.id)
+          .update({'id': docRef.id});
 
       return docRef.id;
     } catch (e) {
@@ -49,7 +54,7 @@ class FirebaseGroupRepository implements GroupRepository {
       );
 
       final groups = querySnapshot.docs
-          .map((doc) => _mapGroupModelToEntity(GroupModel.fromFirestore(doc)))
+          .map((doc) => GroupModel.fromFirestore(doc))
           .toList();
 
       // If the query couldn't order by createdAt, sort in memory
@@ -83,7 +88,7 @@ class FirebaseGroupRepository implements GroupRepository {
         return null;
       }
 
-      return _mapGroupModelToEntity(GroupModel.fromFirestore(doc));
+      return GroupModel.fromFirestore(doc);
     } catch (e) {
       throw Exception('Failed to get group: $e');
     }
@@ -135,7 +140,7 @@ class FirebaseGroupRepository implements GroupRepository {
       descending: true,
     ).map((snapshot) {
       final groups = snapshot.docs
-          .map((doc) => _mapGroupModelToEntity(GroupModel.fromFirestore(doc)))
+          .map((doc) => GroupModel.fromFirestore(doc))
           .toList();
       
       // If the query couldn't order by createdAt, sort in memory
@@ -147,20 +152,5 @@ class FirebaseGroupRepository implements GroupRepository {
     });
   }
 
-  Group _mapGroupModelToEntity(GroupModel model) {
-    return Group(
-      id: model.id,
-      name: model.name,
-      type: model.type,
-      createdBy: model.createdBy,
-      createdAt: model.createdAt,
-      memberIds: model.memberIds,
-      currency: model.currency,
-      startDate: model.startDate,
-      endDate: model.endDate,
-      enableSettleUpReminders: model.enableSettleUpReminders,
-      enableBalanceAlert: model.enableBalanceAlert,
-      balanceAlertAmount: model.balanceAlertAmount,
-    );
-  }
+  
 }

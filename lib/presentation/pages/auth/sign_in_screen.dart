@@ -90,7 +90,7 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
           );
         }
       } else if (mounted) {
-        print('Sign-in was cancelled by user');
+        // Sign-in was cancelled by user
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Sign-in was cancelled'),
@@ -99,7 +99,7 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
         );
       }
     } catch (e) {
-      print('Sign-in error caught in UI: $e');
+      // Sign-in error: $e
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
