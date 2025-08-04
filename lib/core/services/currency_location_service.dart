@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import '../constants/currencies.dart';
 import '../utils/currency_utils.dart';

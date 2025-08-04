@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
@@ -99,19 +98,6 @@ class AccountPage extends StatelessWidget {
                         // Currency Settings Section
                         _buildSectionHeader(context, 'Preferences'),
                         _buildCurrencyTile(context, userSettings),
-
-                        // Temporary debug button
-                        if (kDebugMode) ...[
-                          ListTile(
-                            leading: const Icon(Icons.bug_report),
-                            title: const Text('Test Currency Detection'),
-                            subtitle: const Text(
-                              'Debug: Test currency detection',
-                            ),
-                            onTap: () => _testCurrencyDetection(context),
-                          ),
-                        ],
-
                         _buildSettingsTile(
                           context,
                           icon: Icons.notifications_outlined,
@@ -123,16 +109,16 @@ class AccountPage extends StatelessWidget {
                               _toggleNotifications(context, userSettings),
                         ),
 
-                        _buildSettingsTile(
-                          context,
-                          icon: Icons.palette_outlined,
-                          title: 'Theme',
-                          subtitle: _getThemeDisplayName(
-                            userSettings?.theme ?? 'system',
-                          ),
-                          onTap: () =>
-                              _showThemeSelector(context, userSettings),
-                        ),
+                        // _buildSettingsTile(
+                        //   context,
+                        //   icon: Icons.palette_outlined,
+                        //   title: 'Theme',
+                        //   subtitle: _getThemeDisplayName(
+                        //     userSettings?.theme ?? 'system',
+                        //   ),
+                        //   onTap: () =>
+                        //       _showThemeSelector(context, userSettings),
+                        // ),
 
                         const SizedBox(height: 16),
                         _buildSectionHeader(context, 'Support'),
@@ -433,130 +419,6 @@ class AccountPage extends StatelessWidget {
       default:
         return 'System';
     }
-  }
-
-  void _testCurrencyDetection(BuildContext context) async {
-    // Show a dialog with currency detection results instead of relying on console
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return FutureBuilder<Map<String, String>>(
-          future: _performCurrencyTest(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const AlertDialog(
-                title: Text('Testing Currency Detection'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Running tests...'),
-                  ],
-                ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return AlertDialog(
-                title: const Text('Currency Test Error'),
-                content: Text('Error: ${snapshot.error}'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Close'),
-                  ),
-                ],
-              );
-            }
-
-            final results = snapshot.data ?? {};
-            return AlertDialog(
-              title: const Text('Currency Detection Results'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...results.entries.map(
-                      (entry) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: RichText(
-                          text: TextSpan(
-                            style: Theme.of(context).textTheme.bodyMedium,
-                            children: [
-                              TextSpan(
-                                text: '${entry.key}: ',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              TextSpan(text: entry.value),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Close'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<Map<String, String>> _performCurrencyTest() async {
-    final results = <String, String>{};
-
-    try {
-      // Get platform info
-      results['Platform Locale'] = Platform.localeName;
-      results['Platform OS'] = Platform.operatingSystem;
-
-      // Test CurrencyUtils
-      final detectedCode = CurrencyUtils.getCurrencyCode();
-      final detectedSymbol = CurrencyUtils.getCurrencySymbol();
-      results['Utils Detected'] = '$detectedCode ($detectedSymbol)';
-
-      // Test CurrencyLocationService
-      CurrencyLocationService.clearCache();
-      final serviceCurrency =
-          await CurrencyLocationService.detectCurrencyFromLocation();
-      results['Service Detected'] = serviceCurrency;
-
-      // Check currency details
-      final currency = CurrencyConstants.getCurrencyByCode(serviceCurrency);
-      if (currency != null) {
-        results['Currency Name'] = currency.name;
-        results['Currency Country'] = currency.country;
-        results['Hardcoded Symbol'] = currency.symbol;
-
-        // Test getLocaleSymbol
-        final localeSymbol = currency.getLocaleSymbol();
-        results['Locale Symbol'] = localeSymbol;
-      }
-
-      // Test country mapping
-      final parts = Platform.localeName.split('_');
-      if (parts.length >= 2) {
-        final countryCode = parts[1].toUpperCase();
-        final mappedCurrency = CurrencyConstants.countryToCurrency[countryCode];
-        results['Country Code'] = countryCode;
-        results['Mapped Currency'] = mappedCurrency ?? 'Not found';
-      }
-    } catch (e) {
-      results['Error'] = e.toString();
-    }
-
-    return results;
   }
 
   void _showComingSoon(BuildContext context) {
