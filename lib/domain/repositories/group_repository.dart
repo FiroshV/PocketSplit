@@ -7,4 +7,8 @@ abstract class GroupRepository {
   Future<void> updateGroup(Group group);
   Future<void> deleteGroup(String groupId);
   Stream<List<Group>> watchUserGroups(String userId);
+  Future<void> addMemberToGroup(String groupId, String userId);
+  Future<void> removeMemberFromGroup(String groupId, String userId);
+  Future<Group?> getGroupByInviteCode(String inviteCode);
+  Future<String> generateInviteCode(String groupId);
 }

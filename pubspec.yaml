@@ -58,6 +58,9 @@ dependencies:
   
   # Contacts
   flutter_contacts: ^1.1.9+2
+  
+  # Sharing
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

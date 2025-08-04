@@ -8,6 +8,7 @@ class Group extends Equatable {
   final DateTime createdAt;
   final List<String> memberIds;
   final String currency;
+  final String? inviteCode;
   
   // Trip specific fields
   final DateTime? startDate;
@@ -28,6 +29,7 @@ class Group extends Equatable {
     required this.createdAt,
     required this.memberIds,
     this.currency = 'USD',
+    this.inviteCode,
     this.startDate,
     this.endDate,
     this.enableSettleUpReminders = false,
@@ -43,6 +45,7 @@ class Group extends Equatable {
     DateTime? createdAt,
     List<String>? memberIds,
     String? currency,
+    String? inviteCode,
     DateTime? startDate,
     DateTime? endDate,
     bool? enableSettleUpReminders,
@@ -57,6 +60,7 @@ class Group extends Equatable {
       createdAt: createdAt ?? this.createdAt,
       memberIds: memberIds ?? this.memberIds,
       currency: currency ?? this.currency,
+      inviteCode: inviteCode ?? this.inviteCode,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       enableSettleUpReminders: enableSettleUpReminders ?? this.enableSettleUpReminders,
@@ -74,6 +78,7 @@ class Group extends Equatable {
         createdAt,
         memberIds,
         currency,
+        inviteCode,
         startDate,
         endDate,
         enableSettleUpReminders,

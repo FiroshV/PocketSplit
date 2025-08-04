@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 import '../../core/utils/firestore_query_helper.dart';
 import '../../domain/entities/group.dart';
 import '../../domain/repositories/group_repository.dart';
@@ -19,6 +20,7 @@ class FirebaseGroupRepository implements GroupRepository {
         createdAt: group.createdAt,
         memberIds: group.memberIds,
         currency: group.currency,
+        inviteCode: group.inviteCode,
         startDate: group.startDate,
         endDate: group.endDate,
         enableSettleUpReminders: group.enableSettleUpReminders,
@@ -105,6 +107,7 @@ class FirebaseGroupRepository implements GroupRepository {
         createdAt: group.createdAt,
         memberIds: group.memberIds,
         currency: group.currency,
+        inviteCode: group.inviteCode,
         startDate: group.startDate,
         endDate: group.endDate,
         enableSettleUpReminders: group.enableSettleUpReminders,
@@ -152,5 +155,87 @@ class FirebaseGroupRepository implements GroupRepository {
     });
   }
 
-  
+  @override
+  Future<void> addMemberToGroup(String groupId, String userId) async {
+    try {
+      await _firestore.collection(_collection).doc(groupId).update({
+        'memberIds': FieldValue.arrayUnion([userId])
+      });
+    } catch (e) {
+      throw Exception('Failed to add member to group: $e');
+    }
+  }
+
+  @override
+  Future<void> removeMemberFromGroup(String groupId, String userId) async {
+    try {
+      await _firestore.collection(_collection).doc(groupId).update({
+        'memberIds': FieldValue.arrayRemove([userId])
+      });
+    } catch (e) {
+      throw Exception('Failed to remove member from group: $e');
+    }
+  }
+
+  @override
+  Future<Group?> getGroupByInviteCode(String inviteCode) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection(_collection)
+          .where('inviteCode', isEqualTo: inviteCode)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return null;
+      }
+
+      return GroupModel.fromFirestore(querySnapshot.docs.first);
+    } catch (e) {
+      throw Exception('Failed to get group by invite code: $e');
+    }
+  }
+
+  @override
+  Future<String> generateInviteCode(String groupId) async {
+    try {
+      String inviteCode;
+      bool isUnique = false;
+      int attempts = 0;
+      const maxAttempts = 10;
+
+      do {
+        inviteCode = _generateRandomCode();
+        
+        // Check if the code is already in use
+        final existingGroup = await getGroupByInviteCode(inviteCode);
+        isUnique = existingGroup == null;
+        attempts++;
+        
+        if (attempts >= maxAttempts) {
+          throw Exception('Failed to generate unique invite code after $maxAttempts attempts');
+        }
+      } while (!isUnique);
+
+      // Update the group with the new invite code
+      await _firestore.collection(_collection).doc(groupId).update({
+        'inviteCode': inviteCode
+      });
+
+      return inviteCode;
+    } catch (e) {
+      throw Exception('Failed to generate invite code: $e');
+    }
+  }
+
+  String _generateRandomCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+        8,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+  }
 }

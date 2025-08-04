@@ -1,8 +1,10 @@
 import 'package:get_it/get_it.dart';
 import '../../data/repositories/firebase_group_repository.dart';
 import '../../data/repositories/firebase_user_settings_repository.dart';
+import '../../data/repositories/firebase_expense_repository.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../../domain/repositories/user_settings_repository.dart';
+import '../../domain/repositories/expense_repository.dart';
 import '../../domain/usecases/create_group.dart';
 import '../../domain/usecases/get_user_settings.dart';
 import '../../domain/usecases/update_user_settings.dart';
@@ -20,6 +22,7 @@ void setupServiceLocator() {
   // Repositories
   getIt.registerLazySingleton<GroupRepository>(() => FirebaseGroupRepository());
   getIt.registerLazySingleton<UserSettingsRepository>(() => FirebaseUserSettingsRepository());
+  getIt.registerLazySingleton<ExpenseRepository>(() => FirebaseExpenseRepository());
 
   // Use cases
   getIt.registerLazySingleton<CreateGroup>(() => CreateGroup(getIt<GroupRepository>()));

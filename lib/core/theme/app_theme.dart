@@ -16,8 +16,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primary2,
-        primary: primary2,
+        seedColor: secondary2,
+        primary: secondary2,
         secondary: secondary1,
         surface: white,
         onSurface: darkGray,
@@ -116,11 +116,63 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primary2, width: 2),
+          borderSide: const BorderSide(color: black, width: 2),
         ),
         filled: true,
         fillColor: lightGray,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        labelStyle: const TextStyle(color: black),
+        floatingLabelStyle: const TextStyle(color: black),
+        hintStyle: const TextStyle(color: neutralGray),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return null;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return secondary2;
+          }
+          return null;
+        }),
+        checkColor: WidgetStateProperty.all(white),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return null;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return secondary2;
+          }
+          return null;
+        }),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return null;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return secondary2;
+          }
+          return null;
+        }),
+        trackColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+          if (states.contains(WidgetState.disabled)) {
+            return null;
+          }
+          if (states.contains(WidgetState.selected)) {
+            return secondary2.withValues(alpha: 0.5);
+          }
+          return null;
+        }),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: secondary2,
+        thumbColor: secondary2,
+        overlayColor: secondary2.withValues(alpha: 0.2),
+        inactiveTrackColor: neutralGray.withValues(alpha: 0.3),
       ),
     );
   }
