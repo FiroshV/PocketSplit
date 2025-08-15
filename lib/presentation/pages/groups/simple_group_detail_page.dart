@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
 import 'package:pocket_split/core/services/auth_service.dart';
@@ -10,7 +9,6 @@ import 'package:pocket_split/domain/repositories/group_repository.dart';
 import 'package:pocket_split/domain/repositories/expense_repository.dart';
 import 'package:pocket_split/presentation/pages/expenses/add_expense_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:math';
 
 class SimpleGroupDetailPage extends StatefulWidget {
   final Group group;
@@ -655,9 +653,12 @@ class _SimpleGroupDetailPageState extends State<SimpleGroupDetailPage>
               onPressed: isLoading
                   ? null
                   : () async {
+                      final navigator = Navigator.of(context);
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                      
                       if (emailController.text.trim().isEmpty &&
                           inviteCodeController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        scaffoldMessenger.showSnackBar(
                           const SnackBar(
                             content: Text(
                               'Please enter an email or invite code',
@@ -680,7 +681,7 @@ class _SimpleGroupDetailPageState extends State<SimpleGroupDetailPage>
 
                           if (group == null) {
                             if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
+                              scaffoldMessenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Invalid invite code'),
                                   backgroundColor: Colors.red,
@@ -699,8 +700,8 @@ class _SimpleGroupDetailPageState extends State<SimpleGroupDetailPage>
                           }
 
                           if (mounted) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            navigator.pop();
+                            scaffoldMessenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Successfully joined group!'),
                                 backgroundColor: AppTheme.primary2,
@@ -711,8 +712,8 @@ class _SimpleGroupDetailPageState extends State<SimpleGroupDetailPage>
                           // For email-based invites, we would need to implement email sending
                           // For now, just show a placeholder message
                           if (mounted) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            navigator.pop();
+                            scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text(
                                   'Invite sent to ${emailController.text} (Feature coming soon)',
@@ -727,7 +728,7 @@ class _SimpleGroupDetailPageState extends State<SimpleGroupDetailPage>
                         _loadGroupData();
                       } catch (e) {
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          scaffoldMessenger.showSnackBar(
                             SnackBar(
                               content: Text('Error: $e'),
                               backgroundColor: Colors.red,

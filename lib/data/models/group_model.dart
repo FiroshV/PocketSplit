@@ -3,34 +3,20 @@ import '../../domain/entities/group.dart';
 
 class GroupModel extends Group {
   const GroupModel({
-    required String id,
-    required String name,
-    required String type,
-    required String createdBy,
-    required DateTime createdAt,
-    required List<String> memberIds,
-    required String currency,
-    String? inviteCode,
-    DateTime? startDate,
-    DateTime? endDate,
-    bool enableSettleUpReminders = false,
-    bool enableBalanceAlert = false,
-    double balanceAlertAmount = 100.0,
-  }) : super(
-          id: id,
-          name: name,
-          type: type,
-          createdBy: createdBy,
-          createdAt: createdAt,
-          memberIds: memberIds,
-          currency: currency,
-          inviteCode: inviteCode,
-          startDate: startDate,
-          endDate: endDate,
-          enableSettleUpReminders: enableSettleUpReminders,
-          enableBalanceAlert: enableBalanceAlert,
-          balanceAlertAmount: balanceAlertAmount,
-        );
+    required super.id,
+    required super.name,
+    required super.type,
+    required super.createdBy,
+    required super.createdAt,
+    required super.memberIds,
+    required super.currency,
+    super.inviteCode,
+    super.startDate,
+    super.endDate,
+    super.enableSettleUpReminders = false,
+    super.enableBalanceAlert = false,
+    super.balanceAlertAmount = 100.0,
+  });
 
   factory GroupModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

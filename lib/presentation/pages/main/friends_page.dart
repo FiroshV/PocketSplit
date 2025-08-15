@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer' as developer;
 
 enum FriendsFilter { all, outstandingBalances, friendsYouOwe, friendsWhoOweYou }
 
@@ -40,7 +40,7 @@ class Friend {
   });
 
   double get totalBalance {
-    return expenses.fold(0, (sum, expense) => sum + expense.amount);
+    return expenses.fold(0, (total, expense) => total + expense.amount);
   }
 
   bool get hasOutstandingBalance => totalBalance != 0;
@@ -174,7 +174,7 @@ class _FriendsPageState extends State<FriendsPage> {
       });
       _applyFilters();
     } catch (e) {
-      print('Error loading friends: $e');
+      developer.log('Error loading friends: $e', name: 'FriendsPage', error: e);
       setState(() {
         _friends = [];
         _isLoading = false;
@@ -214,7 +214,7 @@ class _FriendsPageState extends State<FriendsPage> {
   double get _totalOwedToYou {
     return _friends.fold(
       0,
-      (sum, friend) => sum + (friend.owesYou ? friend.totalBalance : 0),
+      (total, friend) => total + (friend.owesYou ? friend.totalBalance : 0),
     );
   }
 
@@ -582,7 +582,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
   final TextEditingController _searchController = TextEditingController();
   List<PhoneContact> _contacts = [];
   List<PhoneContact> _filteredContacts = [];
-  Set<String> _selectedContactIds = {};
+  final Set<String> _selectedContactIds = {};
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -601,7 +601,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
   }
 
   Future<void> _loadContacts() async {
-    print('DEBUG: Starting contact loading...');
+    developer.log('Starting contact loading...', name: 'FriendsPage');
 
     setState(() {
       _isLoading = true;
@@ -610,21 +610,19 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
 
     try {
       // Try to load contacts directly first - flutter_contacts handles permissions internally
-      print('DEBUG: Attempting to load contacts directly...');
+      developer.log('Attempting to load contacts directly...', name: 'FriendsPage');
 
       final List<Contact> testContacts = await FlutterContacts.getContacts();
-      print(
-        'DEBUG: Direct contact loading result: ${testContacts.length} contacts',
-      );
+      developer.log('Direct contact loading result: ${testContacts.length} contacts', name: 'FriendsPage');
 
       if (testContacts.isEmpty) {
         // If no contacts, try requesting permission explicitly
-        print('DEBUG: No contacts found, requesting permission...');
+        developer.log('No contacts found, requesting permission...', name: 'FriendsPage');
         final bool hasPermission = await FlutterContacts.requestPermission();
-        print('DEBUG: Permission request result: $hasPermission');
+        developer.log('Permission request result: $hasPermission', name: 'FriendsPage');
 
         if (!hasPermission) {
-          print('DEBUG: Permission denied');
+          developer.log('Permission denied', name: 'FriendsPage');
           setState(() {
             _isLoading = false;
             _errorMessage =
@@ -634,12 +632,12 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
         }
 
         // Try loading contacts again after permission
-        print('DEBUG: Retrying contact loading after permission...');
+        developer.log('Retrying contact loading after permission...', name: 'FriendsPage');
         final List<Contact> retryContacts = await FlutterContacts.getContacts();
-        print('DEBUG: Retry result: ${retryContacts.length} contacts');
+        developer.log('Retry result: ${retryContacts.length} contacts', name: 'FriendsPage');
 
         if (retryContacts.isEmpty) {
-          print('DEBUG: Still no contacts found');
+          developer.log('Still no contacts found', name: 'FriendsPage');
           setState(() {
             _isLoading = false;
             _errorMessage = 'No contacts found on your device.';
@@ -649,11 +647,11 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
       }
 
       // Load contacts with properties
-      print('DEBUG: Loading contacts with properties...');
+      developer.log('Loading contacts with properties...', name: 'FriendsPage');
       final List<Contact> fullContacts = await FlutterContacts.getContacts(
         withProperties: true,
       );
-      print('DEBUG: Loaded ${fullContacts.length} contacts with properties');
+      developer.log('Loaded ${fullContacts.length} contacts with properties', name: 'FriendsPage');
 
       // Process contacts
       final List<PhoneContact> processedContacts = [];
@@ -684,9 +682,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
         }
       }
 
-      print(
-        'DEBUG: Processed ${processedContacts.length} contacts with email/phone',
-      );
+      developer.log('Processed ${processedContacts.length} contacts with email/phone', name: 'FriendsPage');
 
       // Sort contacts alphabetically
       processedContacts.sort(
@@ -699,10 +695,9 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
         _isLoading = false;
       });
 
-      print('DEBUG: Contact loading completed successfully');
+      developer.log('Contact loading completed successfully', name: 'FriendsPage');
     } catch (e, stackTrace) {
-      print('DEBUG: Error loading contacts: $e');
-      print('DEBUG: Stack trace: $stackTrace');
+      developer.log('Error loading contacts: $e', name: 'FriendsPage', error: e, stackTrace: stackTrace);
 
       // Check if it's a permission error
       if (e.toString().contains('permission') ||
@@ -726,31 +721,6 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
     _loadContacts();
   }
 
-  void _showPermissionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Contact Permission Required'),
-        content: const Text(
-          'To add friends from your contacts, please enable contact access in your device settings.\n\n'
-          'Go to Settings > Privacy > Contacts > PocketSplit and enable access.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              openAppSettings();
-            },
-            child: const Text('Open Settings'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _filterContacts() {
     final query = _searchController.text.toLowerCase();
@@ -1192,7 +1162,7 @@ class _AddFriendsPageState extends State<AddFriendsPage> {
         Navigator.pop(context);
       }
     } catch (e) {
-      print('Error adding friends: $e');
+      developer.log('Error adding friends: $e', name: 'FriendsPage', error: e);
       // Silently handle errors and navigate back
       if (mounted) {
         Navigator.pop(context);

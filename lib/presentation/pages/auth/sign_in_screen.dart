@@ -4,6 +4,7 @@ import 'package:pocket_split/core/theme/app_theme.dart';
 import 'package:pocket_split/core/di/service_locator.dart';
 import 'package:pocket_split/domain/usecases/initialize_user_settings.dart';
 import 'package:pocket_split/presentation/pages/main/main_app_screen.dart';
+import 'dart:developer' as developer;
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -53,18 +54,18 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
   }
 
   Future<void> _signInWithGoogle() async {
-    print('Sign-in button tapped');
+    developer.log('Sign-in button tapped', name: 'SignInScreen');
     
     setState(() {
       _isLoading = true;
     });
 
     try {
-      print('Calling auth service...');
+      developer.log('Calling auth service...', name: 'SignInScreen');
       final userCredential = await _authService.signInWithGoogle();
       
       if (userCredential != null && mounted) {
-        print('Sign-in successful!');
+        developer.log('Sign-in successful!', name: 'SignInScreen');
         
         // Initialize user settings with location-based currency detection
         try {
@@ -75,9 +76,9 @@ class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMix
             email: userCredential.user!.email ?? '',
             photoUrl: userCredential.user!.photoURL,
           );
-          print('User settings initialized successfully');
+          developer.log('User settings initialized successfully', name: 'SignInScreen');
         } catch (e) {
-          print('Failed to initialize user settings: $e');
+          developer.log('Failed to initialize user settings: $e', name: 'SignInScreen', error: e);
           // Continue anyway, settings can be created later
         }
         

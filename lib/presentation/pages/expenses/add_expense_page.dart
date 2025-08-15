@@ -7,7 +7,6 @@ import '../../../core/di/service_locator.dart';
 import '../../../domain/entities/group.dart';
 import '../../../domain/entities/expense.dart';
 import '../../../domain/repositories/expense_repository.dart';
-import '../../../domain/repositories/group_repository.dart';
 
 class AddExpensePage extends StatefulWidget {
   final Group group;
@@ -30,9 +29,9 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
   List<Map<String, dynamic>> _members = [];
   List<String> _selectedPayers = [];
-  Map<String, double> _memberAmounts = {};
-  Map<String, double> _memberPercentages = {};
-  Map<String, int> _memberShares = {};
+  final Map<String, double> _memberAmounts = {};
+  final Map<String, double> _memberPercentages = {};
+  final Map<String, int> _memberShares = {};
 
   bool _isLoading = false;
 

@@ -51,7 +51,6 @@ class CurrencyTestUtils {
   
   static void _log(String message) {
     // Use multiple logging methods to ensure visibility
-    print('CURRENCY_TEST: $message');
     debugPrint('CURRENCY_TEST: $message');
     developer.log(message, name: 'CurrencyTest');
   }

@@ -356,70 +356,8 @@ class AccountPage extends StatelessWidget {
     }
   }
 
-  void _showThemeSelector(BuildContext context, userSettings) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: const Text('System'),
-                subtitle: const Text('Follow system settings'),
-                value: 'system',
-                groupValue: userSettings?.theme ?? 'system',
-                onChanged: (value) => _updateTheme(context, value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Light'),
-                subtitle: const Text('Light theme'),
-                value: 'light',
-                groupValue: userSettings?.theme ?? 'system',
-                onChanged: (value) => _updateTheme(context, value!),
-              ),
-              RadioListTile<String>(
-                title: const Text('Dark'),
-                subtitle: const Text('Dark theme'),
-                value: 'dark',
-                groupValue: userSettings?.theme ?? 'system',
-                onChanged: (value) => _updateTheme(context, value!),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  void _updateTheme(BuildContext context, String theme) {
-    final currentUser = getIt<AuthService>().currentUser;
-    if (currentUser != null) {
-      context.read<UserSettingsBloc>().add(
-        UpdateThemeEvent(userId: currentUser.uid, theme: theme),
-      );
-    }
-    Navigator.pop(context);
-  }
 
-  String _getThemeDisplayName(String theme) {
-    switch (theme) {
-      case 'light':
-        return 'Light';
-      case 'dark':
-        return 'Dark';
-      case 'system':
-      default:
-        return 'System';
-    }
-  }
 
   void _showComingSoon(BuildContext context) {
     ScaffoldMessenger.of(
