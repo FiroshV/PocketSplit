@@ -77,51 +77,29 @@ class GroupsPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    // Action buttons row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _navigateToCreateGroup(context, groupBloc),
-                            icon: const Icon(Icons.group_add),
-                            label: const Text('Add Group'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: AppTheme.primary2,
-                              foregroundColor: Colors.black,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Click on a group to add expenses to it!'),
-                                  backgroundColor: AppTheme.secondary2,
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.receipt_long),
-                            label: const Text('Add Expense'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-            
                     // Groups list section
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Your Groups',
-                            style: Theme.of(context).textTheme.titleLarge,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Your Groups',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () => _navigateToCreateGroup(context, groupBloc),
+                                icon: const Icon(Icons.group_add, size: 18),
+                                label: const Text('Add Group'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  backgroundColor: AppTheme.primary2,
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 16),
             

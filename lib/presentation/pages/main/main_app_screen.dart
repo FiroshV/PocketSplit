@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pocket_split/core/theme/app_theme.dart';
+import 'package:pocket_split/presentation/pages/main/home_page.dart';
 import 'package:pocket_split/presentation/pages/main/groups_page.dart';
 import 'package:pocket_split/presentation/pages/main/friends_page.dart';
 import 'package:pocket_split/presentation/pages/main/activity_page.dart';
@@ -16,6 +17,7 @@ class _MainAppScreenState extends State<MainAppScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
+    const HomePage(),
     const GroupsPage(),
     const FriendsPage(),
     const ActivityPage(),
@@ -40,6 +42,10 @@ class _MainAppScreenState extends State<MainAppScreen> {
         selectedItemColor: AppTheme.secondary2,
         unselectedItemColor: Colors.grey,
         items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.group),
             label: 'Groups',

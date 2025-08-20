@@ -12,6 +12,55 @@ class AppTheme {
   static const Color darkGray = Color(0xFF2C3E50); // Sophistication
   static const Color neutralGray = Color(0xFF7F8C8D); // Professionalism
 
+  
+  // static const Color purpleDark1 = Color(0xFF433878); 
+  static const Color purpleDark2 = Color(0xFF7E60BF); 
+  static const Color purpleLight1 = Color(0xFFFFE100); 
+
+  // static const Color purpleLight1 = Color(0xFFE4B1F0); 
+  // static const Color purpleLight2 = Color(0xFFFFE1FF);
+  static const Color purpleLight2 = Color(0xFFF6FB7A);
+
+  
+  // Light Pastel Vibrant Colors
+  // Cotton Candy palette (soft pink-blue)
+  static const Color cottonCandyDark1 = Color(0xFFFF9EC7);   // Vibrant cotton candy
+  static const Color cottonCandyDark2 = Color(0xFFFFB3D1);   // Soft cotton candy
+  static const Color cottonCandyLight1 = Color(0xFFFFCCE1);  // Light cotton candy
+  static const Color cottonCandyLight2 = Color(0xFFFFF0F8);  // Pale cotton candy
+  
+  // Peach Sorbet palette (warm coral-orange)
+  static const Color peachDark1 = Color(0xFFFF8A65);        // Vibrant peach
+  static const Color peachDark2 = Color(0xFFFFA07A);        // Soft peach
+  static const Color peachLight1 = Color(0xFFFFCC9A);       // Light peach
+  static const Color peachLight2 = Color(0xFFFFF4E6);       // Pale peach
+  
+  // Mint Breeze palette (fresh green-blue)
+  static const Color mintDark1 = Color(0xFF4ECDC4);         // Vibrant mint
+  static const Color mintDark2 = Color(0xFF7FDBDA);         // Soft mint
+  static const Color mintLight1 = Color(0xFFB2E8E6);        // Light mint
+  static const Color mintLight2 = Color(0xFFE6F9F8);        // Pale mint
+  
+  // Lavender Dreams palette (soft purple)
+  static const Color lavenderDark1 = Color(0xFFB39DDB);     // Vibrant lavender
+  static const Color lavenderDark2 = Color(0xFFC5B5E8);     // Soft lavender
+  static const Color lavenderLight1 = Color(0xFFD7CDF4);    // Light lavender
+  static const Color lavenderLight2 = Color(0xFFF3F0FF);    // Pale lavender
+  
+  // Sunshine palette (bright yellow-orange)
+  static const Color sunshineDark1 = Color(0xFFFFD54F);     // Vibrant sunshine
+  static const Color sunshineDark2 = Color(0xFFFFE082);     // Soft sunshine
+  static const Color sunshineLight1 = Color(0xFFFFF59D);    // Light sunshine
+  static const Color sunshineLight2 = Color(0xFFFFFDE7);    // Pale sunshine
+  
+  // Ocean Blue palette (blue theme)
+  static const Color oceanDark1 = Color(0xFF1E40AF);        // Deep ocean blue
+  static const Color oceanDark2 = Color(0xFF3B82F6);        // Ocean blue
+  static const Color oceanLight1 = Color(0xFF93C5FD);       // Light ocean
+  static const Color oceanLight2 = Color(0xFFDDEAFE);       // Pale ocean 
+
+
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
